@@ -9,4 +9,10 @@ window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<
   return _originalFetch(input, { ...init, headers });
 };
 
+// Register service worker to add ngrok-skip-browser-warning header
+// to <img>, <video>, and other HTML-initiated resource requests.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 createRoot(document.getElementById("root")!).render(<App />);
