@@ -1,21 +1,39 @@
 import { RegistrationFormData } from "@/types/registration";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/charming_api';
+const DEFAULT_HEADERS = {
+  'Content-Type': 'application/json',
+  'ngrok-skip-browser-warning': 'true',
+};
+
+const parseJsonResponse = async (response: Response) => {
+  const rawText = await response.text();
+
+  try {
+    return {
+      data: rawText ? JSON.parse(rawText) : null,
+      rawText,
+    };
+  } catch {
+    return {
+      data: null,
+      rawText,
+    };
+  }
+};
 
 export const registrationService = {
   async registerUser(data: RegistrationFormData) {
     try {
       const response = await fetch(`${API_BASE_URL}/register.php`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         return {
           success: true,
           message: result.message || 'Registration successful!',
@@ -24,7 +42,7 @@ export const registrationService = {
       } else {
         return {
           success: false,
-          message: result.message || 'Registration failed',
+          message: result?.message || rawText || 'Registration failed',
         };
       }
     } catch (error) {
@@ -39,15 +57,13 @@ export const registrationService = {
     try {
       const response = await fetch(`${API_BASE_URL}/login.php`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify({ username, password }),
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         const rawUser = result.user || {};
         const normalizedId = Number(rawUser.id ?? rawUser.user_id);
         const normalizedUser = {
@@ -63,7 +79,7 @@ export const registrationService = {
       } else {
         return {
           success: false,
-          message: result.message || 'Login failed',
+          message: result?.message || rawText || 'Login failed',
         };
       }
     } catch (error) {

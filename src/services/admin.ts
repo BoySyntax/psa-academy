@@ -1,6 +1,26 @@
 import { UserType } from "@/constants/userTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/charming_api';
+const DEFAULT_HEADERS = {
+  'Content-Type': 'application/json',
+  'ngrok-skip-browser-warning': 'true',
+};
+
+const parseJsonResponse = async (response: Response) => {
+  const rawText = await response.text();
+
+  try {
+    return {
+      data: rawText ? JSON.parse(rawText) : null,
+      rawText,
+    };
+  } catch {
+    return {
+      data: null,
+      rawText,
+    };
+  }
+};
 
 export interface User {
   id: string;
@@ -125,14 +145,12 @@ export const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/users.php`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         return {
           success: true,
           users: result.users || [],
@@ -140,7 +158,7 @@ export const adminService = {
       } else {
         return {
           success: false,
-          message: result.message || 'Failed to fetch users',
+          message: result?.message || rawText || 'Failed to fetch users',
           users: [],
         };
       }
@@ -157,14 +175,12 @@ export const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/users.php?id=${userId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         return {
           success: true,
           user: result.user,
@@ -172,7 +188,7 @@ export const adminService = {
       } else {
         return {
           success: false,
-          message: result.message || 'Failed to fetch user',
+          message: result?.message || rawText || 'Failed to fetch user',
         };
       }
     } catch (error) {
@@ -187,19 +203,11 @@ export const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/users.php`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify(data),
       });
 
-      const rawText = await response.text();
-      let result: any = null;
-      try {
-        result = rawText ? JSON.parse(rawText) : null;
-      } catch {
-        result = null;
-      }
+      const { data: result, rawText } = await parseJsonResponse(response);
 
       if (response.ok) {
         return {
@@ -225,15 +233,13 @@ export const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/users.php`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify({ id: userId, ...data }),
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         return {
           success: true,
           message: result.message || 'User updated successfully',
@@ -242,7 +248,7 @@ export const adminService = {
       } else {
         return {
           success: false,
-          message: result.message || 'Failed to update user',
+          message: result?.message || rawText || 'Failed to update user',
         };
       }
     } catch (error) {
@@ -257,15 +263,13 @@ export const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/users.php`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify({ id: userId }),
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         return {
           success: true,
           message: result.message || 'User deleted successfully',
@@ -273,7 +277,7 @@ export const adminService = {
       } else {
         return {
           success: false,
-          message: result.message || 'Failed to delete user',
+          message: result?.message || rawText || 'Failed to delete user',
         };
       }
     } catch (error) {
@@ -288,14 +292,12 @@ export const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/users.php?user_type=${userType}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
       });
 
-      const result = await response.json();
+      const { data: result, rawText } = await parseJsonResponse(response);
 
-      if (response.ok) {
+      if (response.ok && result) {
         return {
           success: true,
           users: result.users || [],
@@ -318,8 +320,16 @@ export const adminService = {
 
   async fetchCareerLeverageInventory(year: number) {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/career-leverage-inventory.php?year=${year}`);
-      return await response.json() as { success: boolean; submissions: AdminCliSubmission[]; count: number; message?: string };
+      const response = await fetch(`${API_BASE_URL}/admin/career-leverage-inventory.php?year=${year}`, {
+        headers: DEFAULT_HEADERS,
+      });
+      const { data, rawText } = await parseJsonResponse(response);
+      return (data || {
+        success: false,
+        submissions: [],
+        count: 0,
+        message: rawText || 'Failed to fetch CLI results',
+      }) as { success: boolean; submissions: AdminCliSubmission[]; count: number; message?: string };
     } catch (error) {
       return {
         success: false,
@@ -332,8 +342,16 @@ export const adminService = {
 
   async fetchSkillAudits(year: number) {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/skill-audits.php?year=${year}`);
-      return await response.json() as { success: boolean; audits: AdminSatnaSubmission[]; count: number; message?: string };
+      const response = await fetch(`${API_BASE_URL}/admin/skill-audits.php?year=${year}`, {
+        headers: DEFAULT_HEADERS,
+      });
+      const { data, rawText } = await parseJsonResponse(response);
+      return (data || {
+        success: false,
+        audits: [],
+        count: 0,
+        message: rawText || 'Failed to fetch SATNA submissions',
+      }) as { success: boolean; audits: AdminSatnaSubmission[]; count: number; message?: string };
     } catch (error) {
       return {
         success: false,
@@ -346,8 +364,16 @@ export const adminService = {
 
   async fetchIdps(status: string = 'all') {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/idps.php?status=${status}`);
-      return await response.json() as { success: boolean; idps: AdminIdpSubmission[]; count: number; message?: string };
+      const response = await fetch(`${API_BASE_URL}/admin/idps.php?status=${status}`, {
+        headers: DEFAULT_HEADERS,
+      });
+      const { data, rawText } = await parseJsonResponse(response);
+      return (data || {
+        success: false,
+        idps: [],
+        count: 0,
+        message: rawText || 'Failed to fetch IDPs',
+      }) as { success: boolean; idps: AdminIdpSubmission[]; count: number; message?: string };
     } catch (error) {
       return {
         success: false,
