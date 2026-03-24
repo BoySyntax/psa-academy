@@ -14,14 +14,24 @@ export const parseJsonResponse = async (response: Response) => {
   }
 };
 
+const isLocalhostUrl = (u: string) =>
+  u.startsWith('http://localhost') || u.startsWith('http://127.0.0.1');
+
 export const getImageUrl = (url?: string | null): string | null => {
   if (!url) return null;
-  if (url.startsWith('http://localhost') || url.startsWith('http://127.0.0.1')) {
+  if (isLocalhostUrl(url)) {
     try {
       const apiOrigin = new URL(API_BASE_URL).origin;
+      // If the configured API base is also localhost (VITE_API_BASE_URL not set)
+      // and the app is running from a deployed origin, we cannot load the image —
+      // return null so components show their fallback instead of a blocked request.
+      if (isLocalhostUrl(apiOrigin + '/')) {
+        const appOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+        if (!isLocalhostUrl(appOrigin + '/')) return null;
+      }
       return url.replace(/^http:\/\/(localhost|127\.0\.0\.1)/, apiOrigin);
     } catch {
-      return url;
+      return null;
     }
   }
   return url;
