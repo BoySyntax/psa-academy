@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderProfileMenu from "@/components/HeaderProfileMenu";
 import { useToast } from "@/hooks/use-toast";
 import { CareerLeverageSubmission } from "@/services/careerLeverageInventory";
+import { getImageUrl } from "@/lib/apiHelper";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -136,7 +137,7 @@ const CareerLeverageSubmissionsView = ({
                   <div className="flex flex-col lg:flex-row gap-6">
                     <div className="flex items-start gap-4 flex-1">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={submission.student.profile_image_url || undefined} />
+                        <AvatarImage src={getImageUrl(submission.student.profile_image_url) || undefined} />
                         <AvatarFallback>{getInitials(submission.student.first_name, submission.student.last_name)}</AvatarFallback>
                       </Avatar>
 

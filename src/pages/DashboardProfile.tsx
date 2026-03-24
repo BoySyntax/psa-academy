@@ -81,7 +81,7 @@ const DashboardProfile = ({ user, onNavigate, onLogout }: DashboardProfileProps)
     try {
       const result = await profileService.uploadProfileImage(user.id.toString(), file);
       if (result.success && result.profile_image_url) {
-        setProfileImageUrl(result.profile_image_url);
+        setProfileImageUrl(getImageUrl(result.profile_image_url) || "");
         toast({
           title: "Success",
           description: "Profile picture updated.",
