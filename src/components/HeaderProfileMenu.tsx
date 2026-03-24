@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { profileService } from "@/services/profile";
+import { getImageUrl } from "@/lib/apiHelper";
 
 interface HeaderProfileMenuProps {
   user: {
@@ -33,7 +34,7 @@ const HeaderProfileMenu = ({ user, roleLabel, onNavigate, onLogout }: HeaderProf
     const run = async () => {
       const result = await profileService.getProfile(user.id.toString());
       if (result.success && result.profile?.profile_image_url) {
-        setProfileImageUrl(result.profile.profile_image_url);
+        setProfileImageUrl(getImageUrl(result.profile.profile_image_url) || "");
       }
     };
     run();
@@ -55,7 +56,7 @@ const HeaderProfileMenu = ({ user, roleLabel, onNavigate, onLogout }: HeaderProf
           </div>
 
           <Avatar className="h-10 w-10">
-            <AvatarImage src={profileImageUrl || undefined} alt="Profile image" />
+            <AvatarImage src={getImageUrl(profileImageUrl) || undefined} alt="Profile image" />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </button>
