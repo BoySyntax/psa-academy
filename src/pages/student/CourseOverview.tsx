@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { enrollmentService, Enrollment } from "@/services/enrollment";
 import StudentHeaderActions from "@/components/StudentHeaderActions";
+import { getImageUrl } from "@/lib/apiHelper";
 import SkillAuditDialog from "@/components/SkillAuditDialog";
 import TeacherRatingDialog from "@/components/TeacherRatingDialog";
 import { skillAuditService } from "@/services/skillAudit";
@@ -356,11 +357,12 @@ const CourseOverview = ({ user, onNavigate, onLogout }: CourseOverviewProps) => 
                       viewMode === "grid" ? "h-40" : "w-48 h-full"
                     }`}
                   >
-                    {enrollment.course?.thumbnail_url ? (
+                    {getImageUrl(enrollment.course?.thumbnail_url) ? (
                       <img
-                        src={enrollment.course.thumbnail_url}
-                        alt={enrollment.course.course_name}
+                        src={getImageUrl(enrollment.course?.thumbnail_url)!}
+                        alt={enrollment.course?.course_name}
                         className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     ) : (
                       <BookOpen className="w-16 h-16 text-primary" />
@@ -485,11 +487,12 @@ const CourseOverview = ({ user, onNavigate, onLogout }: CourseOverviewProps) => 
                   className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow"
                 >
                   <div className="bg-gradient-to-br from-primary/20 to-primary/5 h-40 flex items-center justify-center">
-                    {course.thumbnail_url ? (
+                    {getImageUrl(course.thumbnail_url) ? (
                       <img
-                        src={course.thumbnail_url}
+                        src={getImageUrl(course.thumbnail_url)!}
                         alt={course.course_name}
                         className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     ) : (
                       <BookOpen className="w-16 h-16 text-primary" />

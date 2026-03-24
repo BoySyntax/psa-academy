@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { profileService } from "@/services/profile";
+import { getImageUrl } from "@/lib/apiHelper";
 import {
   Accordion,
   AccordionContent,
@@ -42,7 +43,7 @@ const DashboardProfile = ({ user, onNavigate, onLogout }: DashboardProfileProps)
       const result = await profileService.getProfile(user.id.toString());
       if (result.success && result.profile) {
         setProfile(result.profile);
-        setProfileImageUrl(result.profile.profile_image_url || "");
+        setProfileImageUrl(getImageUrl(result.profile.profile_image_url) || "");
       }
       setLoading(false);
     };
@@ -199,7 +200,7 @@ const DashboardProfile = ({ user, onNavigate, onLogout }: DashboardProfileProps)
         >
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <Avatar className="h-40 w-40">
-              <AvatarImage src={profileImageUrl || undefined} alt="Profile image" />
+              <AvatarImage src={getImageUrl(profileImageUrl) || undefined} alt="Profile image" />
               <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
             </Avatar>
 

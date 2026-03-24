@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { enrollmentService } from "@/services/enrollment";
 import StudentHeaderActions from "@/components/StudentHeaderActions";
+import { getImageUrl } from "@/lib/apiHelper";
 
 interface AvailableCoursesProps {
   user: {
@@ -158,11 +159,12 @@ const AvailableCourses = ({ user, onNavigate, onLogout }: AvailableCoursesProps)
               >
                 {/* Course Thumbnail */}
                 <div className="bg-gradient-to-br from-primary/20 to-primary/5 h-40 flex items-center justify-center">
-                  {course.thumbnail_url ? (
+                  {getImageUrl(course.thumbnail_url) ? (
                     <img
-                      src={course.thumbnail_url}
+                      src={getImageUrl(course.thumbnail_url)!}
                       alt={course.course_name}
                       className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
                     <BookOpen className="w-16 h-16 text-primary" />

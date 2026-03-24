@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BarChart3, MessageSquare, Star, User } from "lucide-react";
+import { getImageUrl } from "@/lib/apiHelper";
 import HeaderProfileMenu from "@/components/HeaderProfileMenu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,11 +130,12 @@ const TeacherRatings = ({ user, onNavigate, onLogout }: TeacherRatingsProps) => 
                             onClick={() => toggleCard(`${summary.teacher_id}-${summary.course_id}`)}
                           >
                             <div className="h-[380px] bg-muted">
-                              {summary.teacher.profile_image_url ? (
+                              {getImageUrl(summary.teacher.profile_image_url) ? (
                                 <img
-                                  src={summary.teacher.profile_image_url}
+                                  src={getImageUrl(summary.teacher.profile_image_url)!}
                                   alt={`${summary.teacher.first_name} ${summary.teacher.last_name}`}
                                   className="h-full w-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                 />
                               ) : (
                                 <div className="h-full flex items-center justify-center bg-secondary">

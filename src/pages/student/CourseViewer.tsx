@@ -34,6 +34,7 @@ import StudentTestTaking from "@/components/StudentTestTaking";
 import TrainingEvaluationDialog from "@/components/TrainingEvaluationDialog";
 import { profileService } from "@/services/profile";
 import { evaluationService } from "@/services/evaluation";
+import { getImageUrl } from "@/lib/apiHelper";
 
 interface CourseViewerProps {
   courseId: number;
@@ -837,11 +838,9 @@ const CourseViewer = ({ courseId, user, onNavigate, onLogout }: CourseViewerProp
                     ) : (
                       <div className="text-center py-12">
                         <div className="w-full max-w-md mx-auto mb-6">
-                          <img 
-                            src="https://via.placeholder.com/600x300/4F46E5/FFFFFF?text=Lesson+Content" 
-                            alt="Lesson illustration"
-                            className="w-full rounded-lg"
-                          />
+                          <div className="w-full h-32 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                            <BookOpen className="w-12 h-12 text-primary/40" />
+                          </div>
                         </div>
                         <p className="text-muted-foreground">
                           {selectedLesson.lesson_type === 'quiz' 

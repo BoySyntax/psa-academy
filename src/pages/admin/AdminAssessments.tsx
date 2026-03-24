@@ -1,6 +1,7 @@
 import { ComponentType, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, CheckCircle, ClipboardList, Clock, Mail, Phone, User, XCircle } from "lucide-react";
+import { getImageUrl } from "@/lib/apiHelper";
 import HeaderProfileMenu from "@/components/HeaderProfileMenu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -269,7 +270,7 @@ const AdminAssessments = ({ user, onNavigate, onLogout }: AdminAssessmentsProps)
                   <div className="flex flex-col lg:flex-row gap-6">
                     <div className="flex items-start gap-4 flex-1">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={record.student.profile_image_url || undefined} />
+                        <AvatarImage src={getImageUrl(record.student.profile_image_url) || undefined} />
                         <AvatarFallback>{getInitials(record.student.first_name, record.student.last_name)}</AvatarFallback>
                       </Avatar>
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Users } from "lucide-react";
+import { getImageUrl } from "@/lib/apiHelper";
 import HeaderProfileMenu from "@/components/HeaderProfileMenu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,16 +129,17 @@ const TrainerList = ({ user, onNavigate, onLogout }: TrainerListProps) => {
                         onClick={() => toggleCard(key)}
                       >
                         <div className="h-[380px] bg-muted">
-                          {trainer.profile_image_url ? (
+                          {getImageUrl(trainer.profile_image_url) ? (
                             <img
-                              src={trainer.profile_image_url}
+                              src={getImageUrl(trainer.profile_image_url)!}
                               alt={`${trainer.first_name} ${trainer.last_name}`}
                               className="h-full w-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <div className="h-full flex items-center justify-center bg-secondary">
                               <Avatar className="h-24 w-24">
-                                <AvatarImage src={trainer.profile_image_url || undefined} />
+                                <AvatarImage src={getImageUrl(trainer.profile_image_url) || undefined} />
                                 <AvatarFallback className="text-2xl">{getInitials(trainer.first_name, trainer.last_name)}</AvatarFallback>
                               </Avatar>
                             </div>

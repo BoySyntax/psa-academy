@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Clock, User, Mail, Phone, BookOpen, Calendar, Filter } from "lucide-react";
+import { getImageUrl } from "@/lib/apiHelper";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderProfileMenu from "@/components/HeaderProfileMenu";
@@ -148,7 +149,7 @@ const EnrollmentApprovals = ({ user, onNavigate, onLogout }: EnrollmentApprovals
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex items-start gap-4 flex-1">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={enrollment.student.profile_image_url || undefined} />
+            <AvatarImage src={getImageUrl(enrollment.student.profile_image_url) || undefined} />
             <AvatarFallback>
               {getInitials(enrollment.student.first_name, enrollment.student.last_name)}
             </AvatarFallback>

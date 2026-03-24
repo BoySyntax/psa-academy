@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { enrollmentService, Enrollment } from "@/services/enrollment";
 import StudentHeaderActions from "@/components/StudentHeaderActions";
+import { getImageUrl } from "@/lib/apiHelper";
 import { notificationsService } from "@/services/notifications";
 
 interface MyCoursesProps {
@@ -248,11 +249,12 @@ const MyCourses = ({ user, onNavigate, onLogout }: MyCoursesProps) => {
                     viewMode === "grid" ? "h-40" : "w-48 h-full"
                   }`}
                 >
-                  {enrollment.course?.thumbnail_url ? (
+                  {getImageUrl(enrollment.course?.thumbnail_url) ? (
                     <img
-                      src={enrollment.course.thumbnail_url}
-                      alt={enrollment.course.course_name}
+                      src={getImageUrl(enrollment.course?.thumbnail_url)!}
+                      alt={enrollment.course?.course_name}
                       className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
                     <BookOpen className="w-16 h-16 text-primary" />

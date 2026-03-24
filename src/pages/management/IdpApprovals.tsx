@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Clock, User, Mail, Phone, ClipboardList, Calendar } from "lucide-react";
+import { getImageUrl } from "@/lib/apiHelper";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderProfileMenu from "@/components/HeaderProfileMenu";
@@ -154,7 +155,7 @@ const IdpApprovals = ({ user, onNavigate, onLogout }: IdpApprovalsProps) => {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex items-start gap-4 flex-1">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={idp.student.profile_image_url || undefined} />
+            <AvatarImage src={getImageUrl(idp.student.profile_image_url) || undefined} />
             <AvatarFallback>{getInitials(idp.student.first_name, idp.student.last_name)}</AvatarFallback>
           </Avatar>
 

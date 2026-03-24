@@ -14,6 +14,19 @@ export const parseJsonResponse = async (response: Response) => {
   }
 };
 
+export const getImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http://localhost') || url.startsWith('http://127.0.0.1')) {
+    try {
+      const apiOrigin = new URL(API_BASE_URL).origin;
+      return url.replace(/^http:\/\/(localhost|127\.0\.0\.1)/, apiOrigin);
+    } catch {
+      return url;
+    }
+  }
+  return url;
+};
+
 export const apiFetch = async (
   url: string,
   options: RequestInit = {}

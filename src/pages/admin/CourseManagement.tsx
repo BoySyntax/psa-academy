@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { getImageUrl } from "@/lib/apiHelper";
 import {
   BookOpen,
   Plus,
@@ -350,11 +351,12 @@ const CourseManagement = ({ user, onNavigate, onLogout }: CourseManagementProps)
                 {filteredCourses.map((course) => (
                   <TableRow key={course.id}>
                     <TableCell>
-                      {course.thumbnail_url ? (
+                      {getImageUrl(course.thumbnail_url) ? (
                         <img
-                          src={course.thumbnail_url}
+                          src={getImageUrl(course.thumbnail_url)!}
                           alt={course.course_name}
                           className="w-16 h-16 object-cover rounded"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       ) : (
                         <div className="w-16 h-16 bg-secondary rounded flex items-center justify-center">
