@@ -67,13 +67,20 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // First, handle all ngrok requests to bypass warning page
+  // Skip authentication requests entirely
+  if (url.pathname.includes('/login.php') || 
+      url.pathname.includes('/register.php') || 
+      url.pathname.includes('/auth/')) {
+    return; // Let browser handle with global fetch interceptor
+  }
+
+  // Handle ngrok requests (but not auth)
   if (isNgrokRequest(url)) {
     // For media files, use caching strategy
     if (isNgrokUploadsRequest(url, event.request.method)) {
       event.respondWith(handleMediaRequest(event.request));
     } else {
-      // For API calls, just add the header and pass through
+      // For other API calls, add header and pass through
       event.respondWith(handleApiRequest(event.request));
     }
   }
@@ -91,12 +98,17 @@ async function handleApiRequest(request) {
   const headers = new Headers(request.headers);
   headers.set('ngrok-skip-browser-warning', 'true');
   
+  // For login/auth requests, include credentials
+  const isAuthRequest = request.url.includes('/auth/') || 
+                       request.url.includes('/login') || 
+                       request.url.includes('/register');
+  
   const requestInit = {
     method: request.method,
     headers: headers,
     body: request.body,
     mode: 'cors',
-    credentials: 'omit',
+    credentials: isAuthRequest ? 'include' : 'omit',
   };
   
   try {
@@ -108,6 +120,7 @@ async function handleApiRequest(request) {
       headers: { 'ngrok-skip-browser-warning': 'true' },
       body: request.body,
       mode: 'no-cors',
+      credentials: isAuthRequest ? 'include' : 'omit',
     });
   }
 }

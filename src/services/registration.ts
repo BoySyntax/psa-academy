@@ -54,11 +54,21 @@ export const registrationService = {
   },
 
   async loginUser(username: string, password: string) {
+    // Validate inputs
+    if (!username || !password) {
+      return {
+        success: false,
+        message: 'Username and password are required',
+      };
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/login.php`, {
         method: 'POST',
         headers: DEFAULT_HEADERS,
         body: JSON.stringify({ username, password }),
+        // Add timeout
+        signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
       const { data: result, rawText } = await parseJsonResponse(response);
@@ -77,15 +87,38 @@ export const registrationService = {
           user: normalizedUser,
         };
       } else {
+        // More specific error messages
+        let errorMessage = result?.message || rawText || 'Login failed';
+        
+        if (response.status === 400) {
+          errorMessage = 'Invalid username or password';
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again later';
+        } else if (response.status === 0 || !navigator.onLine) {
+          errorMessage = 'Network error. Check your connection';
+        }
+
         return {
           success: false,
-          message: result?.message || rawText || 'Login failed',
+          message: errorMessage,
         };
       }
     } catch (error) {
+      let errorMessage = 'Login failed';
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Login timeout. Please try again';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Check your connection and ngrok URL';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Login failed',
+        message: errorMessage,
       };
     }
   },
