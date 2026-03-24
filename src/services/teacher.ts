@@ -61,9 +61,9 @@ export const teacherService = {
     }
   },
 
-  // Upload learning material using chunked upload to bypass ngrok's 40s request timeout.
-  // Files are split into 1 MB pieces; each piece is a separate HTTP POST that completes
-  // in a few seconds regardless of file size.
+  // Upload learning material using optimized chunked upload.
+  // Uses 5 MB chunks (5x fewer requests) and parallel uploads for files < 25 MB.
+  // Falls back to single upload for very small files to minimize overhead.
   async uploadMaterial(
     lessonId: number,
     courseId: number,
@@ -78,69 +78,217 @@ export const teacherService = {
       return { success: false, message: 'File is too large. Maximum allowed size is 500MB.' };
     }
 
-    const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB — well within ngrok's 40 s timeout
+    // Adaptive chunk sizing: 5MB for most files, 10MB for very large files
+    const CHUNK_SIZE = file.size > 100 * 1024 * 1024 ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE) || 1;
     const uploadId =
       Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+    // Small files (< 5MB) upload as a single chunk to avoid overhead
+    if (file.size <= CHUNK_SIZE) {
+      return this._uploadSingleChunk(file, lessonId, courseId, teacherId, materialName, description, onProgress);
+    }
+
+    // Parallel uploads for medium files (5-25MB) to speed things up
+    const PARALLEL_THRESHOLD = 25 * 1024 * 1024;
+    const useParallel = file.size <= PARALLEL_THRESHOLD && totalChunks <= 5;
+
     try {
-      for (let idx = 0; idx < totalChunks; idx++) {
-        const start = idx * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-
-        const fd = new FormData();
-        fd.append('chunk', chunk, file.name);
-        fd.append('upload_id', uploadId);
-        fd.append('chunk_index', String(idx));
-        fd.append('total_chunks', String(totalChunks));
-        fd.append('file_name', file.name);
-        fd.append('file_size', String(file.size));
-        // Send metadata on every chunk so the backend has it when assembling
-        fd.append('lesson_id', String(lessonId));
-        fd.append('course_id', String(courseId));
-        fd.append('teacher_id', teacherId);
-        if (materialName) fd.append('material_name', materialName);
-        if (description)  fd.append('description', description);
-
-        const response = await fetch(`${API_BASE_URL}/teacher/upload-chunk.php`, {
-          method: 'POST',
-          body: fd,
-        });
-
-        if (!response.ok) {
-          let errMsg = 'Chunk upload failed';
-          try {
-            const err = await response.json();
-            errMsg = err.message || errMsg;
-          } catch { /* ignore */ }
-          return { success: false, message: errMsg };
-        }
-
-        // Report progress after each successful chunk
-        onProgress?.(Math.round(((idx + 1) / totalChunks) * 100));
-
-        // Last chunk response contains the final material info
-        if (idx === totalChunks - 1) {
-          try {
-            const result = await response.json();
-            return {
-              success: true,
-              message: result.message || 'Material uploaded successfully',
-              material: result.material,
-            };
-          } catch {
-            return { success: true, message: 'Material uploaded successfully' };
-          }
-        }
+      if (useParallel) {
+        return this._uploadParallelChunks(file, lessonId, courseId, teacherId, totalChunks, uploadId, materialName, description, onProgress);
+      } else {
+        return this._uploadSequentialChunks(file, lessonId, courseId, teacherId, totalChunks, uploadId, materialName, description, onProgress);
       }
-      return { success: true, message: 'Material uploaded successfully' };
     } catch (error) {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Upload failed',
       };
     }
+  },
+
+  // Helper: single chunk upload for small files
+  async _uploadSingleChunk(
+    file: File,
+    lessonId: number,
+    courseId: number,
+    teacherId: string,
+    materialName?: string,
+    description?: string,
+    onProgress?: (pct: number) => void
+  ) {
+    const fd = new FormData();
+    fd.append('chunk', file, file.name);
+    fd.append('upload_id', Math.random().toString(36).slice(2) + Date.now().toString(36));
+    fd.append('chunk_index', '0');
+    fd.append('total_chunks', '1');
+    fd.append('file_name', file.name);
+    fd.append('file_size', String(file.size));
+    fd.append('lesson_id', String(lessonId));
+    fd.append('course_id', String(courseId));
+    fd.append('teacher_id', teacherId);
+    if (materialName) fd.append('material_name', materialName);
+    if (description) fd.append('description', description);
+
+    onProgress?.(10);
+    const response = await fetch(`${API_BASE_URL}/teacher/upload-chunk.php`, {
+      method: 'POST',
+      body: fd,
+    });
+    onProgress?.(90);
+
+    if (!response.ok) {
+      let errMsg = 'Upload failed';
+      try {
+        const err = await response.json();
+        errMsg = err.message || errMsg;
+      } catch { /* ignore */ }
+      return { success: false, message: errMsg };
+    }
+
+    onProgress?.(100);
+    try {
+      const result = await response.json();
+      return {
+        success: true,
+        message: result.message || 'Material uploaded successfully',
+        material: result.material,
+      };
+    } catch {
+      return { success: true, message: 'Material uploaded successfully' };
+    }
+  },
+
+  // Helper: parallel chunk upload for medium files
+  async _uploadParallelChunks(
+    file: File,
+    lessonId: number,
+    courseId: number,
+    teacherId: string,
+    totalChunks: number,
+    uploadId: string,
+    materialName?: string,
+    description?: string,
+    onProgress?: (pct: number) => void
+  ) {
+    const CHUNK_SIZE = 5 * 1024 * 1024;
+    const chunks = [];
+    for (let idx = 0; idx < totalChunks; idx++) {
+      const start = idx * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      chunks.push({ idx, chunk: file.slice(start, end) });
+    }
+
+    let completed = 0;
+    const results = new Map<number, boolean>();
+
+    const uploadChunk = async ({ idx, chunk }: { idx: number; chunk: Blob }) => {
+      const fd = new FormData();
+      fd.append('chunk', chunk, file.name);
+      fd.append('upload_id', uploadId);
+      fd.append('chunk_index', String(idx));
+      fd.append('total_chunks', String(totalChunks));
+      fd.append('file_name', file.name);
+      fd.append('file_size', String(file.size));
+      fd.append('lesson_id', String(lessonId));
+      fd.append('course_id', String(courseId));
+      fd.append('teacher_id', teacherId);
+      if (materialName) fd.append('material_name', materialName);
+      if (description) fd.append('description', description);
+
+      const response = await fetch(`${API_BASE_URL}/teacher/upload-chunk.php`, {
+        method: 'POST',
+        body: fd,
+      });
+
+      if (!response.ok) throw new Error(`Chunk ${idx} failed`);
+      
+      completed++;
+      onProgress?.(Math.round((completed / totalChunks) * 100));
+      
+      // Last chunk returns the final result
+      if (idx === totalChunks - 1) {
+        try {
+          return await response.json();
+        } catch {
+          return { message: 'Material uploaded successfully' };
+        }
+      }
+      return null;
+    };
+
+    // Upload in parallel with concurrency of 3
+    const CONCURRENCY = 3;
+    for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+      const batch = chunks.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(uploadChunk));
+    }
+
+    return { success: true, message: 'Material uploaded successfully' };
+  },
+
+  // Helper: sequential chunk upload for large files
+  async _uploadSequentialChunks(
+    file: File,
+    lessonId: number,
+    courseId: number,
+    teacherId: string,
+    totalChunks: number,
+    uploadId: string,
+    materialName?: string,
+    description?: string,
+    onProgress?: (pct: number) => void
+  ) {
+    const CHUNK_SIZE = file.size > 100 * 1024 * 1024 ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+    
+    for (let idx = 0; idx < totalChunks; idx++) {
+      const start = idx * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+
+      const fd = new FormData();
+      fd.append('chunk', chunk, file.name);
+      fd.append('upload_id', uploadId);
+      fd.append('chunk_index', String(idx));
+      fd.append('total_chunks', String(totalChunks));
+      fd.append('file_name', file.name);
+      fd.append('file_size', String(file.size));
+      fd.append('lesson_id', String(lessonId));
+      fd.append('course_id', String(courseId));
+      fd.append('teacher_id', teacherId);
+      if (materialName) fd.append('material_name', materialName);
+      if (description) fd.append('description', description);
+
+      const response = await fetch(`${API_BASE_URL}/teacher/upload-chunk.php`, {
+        method: 'POST',
+        body: fd,
+      });
+
+      if (!response.ok) {
+        let errMsg = 'Chunk upload failed';
+        try {
+          const err = await response.json();
+          errMsg = err.message || errMsg;
+        } catch { /* ignore */ }
+        return { success: false, message: errMsg };
+      }
+
+      onProgress?.(Math.round(((idx + 1) / totalChunks) * 100));
+
+      if (idx === totalChunks - 1) {
+        try {
+          const result = await response.json();
+          return {
+            success: true,
+            message: result.message || 'Material uploaded successfully',
+            material: result.material,
+          };
+        } catch {
+          return { success: true, message: 'Material uploaded successfully' };
+        }
+      }
+    }
+    return { success: true, message: 'Material uploaded successfully' };
   },
 
   // Delete learning material
