@@ -67,56 +67,97 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  if (!isNgrokUploadsRequest(url, event.request.method)) return;
-
-  event.respondWith(
-    (async () => {
-      const cache = await caches.open(STALE_CACHE_NAME);
-      const cached = await cache.match(event.request);
-      
-      // If we have a fresh cache hit, serve it immediately
-      if (cached) {
-        // Background refresh for next time
-        fetchAndCache(event.request);
-        return cached;
-      }
-
-      // Try network first
-      try {
-        const response = await fetch(event.request.url, {
-          method: 'GET',
-          headers: { 'ngrok-skip-browser-warning': 'true' },
-          mode: 'cors',
-          credentials: 'omit',
-        });
-
-        if (response.ok) {
-          // Cache successful responses
-          const cacheToStore = await caches.open(CACHE_NAME);
-          cacheToStore.put(event.request, response.clone());
-          
-          // Also store in stale cache for future
-          const staleCache = await caches.open(STALE_CACHE_NAME);
-          staleCache.put(event.request, response.clone());
-        }
-        
-        return response;
-      } catch (error) {
-        // Network failed, try to serve from stale cache
-        const staleResponse = await cache.match(event.request);
-        if (staleResponse) {
-          return staleResponse;
-        }
-        
-        // Last resort: opaque fetch
-        return fetch(event.request.url, {
-          headers: { 'ngrok-skip-browser-warning': 'true' },
-          mode: 'no-cors',
-        });
-      }
-    })()
-  );
+  // First, handle all ngrok requests to bypass warning page
+  if (isNgrokRequest(url)) {
+    // For media files, use caching strategy
+    if (isNgrokUploadsRequest(url, event.request.method)) {
+      event.respondWith(handleMediaRequest(event.request));
+    } else {
+      // For API calls, just add the header and pass through
+      event.respondWith(handleApiRequest(event.request));
+    }
+  }
 });
+
+// Check if request is to any ngrok host
+function isNgrokRequest(url) {
+  return url.hostname.endsWith('.ngrok-free.app') ||
+         url.hostname.endsWith('.ngrok.io') ||
+         url.hostname.endsWith('.ngrok.app');
+}
+
+// Handle API requests (just add header, no caching)
+async function handleApiRequest(request) {
+  const headers = new Headers(request.headers);
+  headers.set('ngrok-skip-browser-warning', 'true');
+  
+  const requestInit = {
+    method: request.method,
+    headers: headers,
+    body: request.body,
+    mode: 'cors',
+    credentials: 'omit',
+  };
+  
+  try {
+    return fetch(request.url, requestInit);
+  } catch (error) {
+    // Fallback for CORS issues
+    return fetch(request.url, {
+      method: request.method,
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      body: request.body,
+      mode: 'no-cors',
+    });
+  }
+}
+
+// Handle media requests with caching
+async function handleMediaRequest(request) {
+  const cache = await caches.open(STALE_CACHE_NAME);
+  const cached = await cache.match(request);
+  
+  // If we have a fresh cache hit, serve it immediately
+  if (cached) {
+    // Background refresh for next time
+    fetchAndCache(request);
+    return cached;
+  }
+
+  // Try network first
+  try {
+    const response = await fetch(request.url, {
+      method: 'GET',
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      mode: 'cors',
+      credentials: 'omit',
+    });
+
+    if (response.ok) {
+      // Cache successful responses
+      const cacheToStore = await caches.open(CACHE_NAME);
+      cacheToStore.put(request, response.clone());
+      
+      // Also store in stale cache for future
+      const staleCache = await caches.open(STALE_CACHE_NAME);
+      staleCache.put(request, response.clone());
+    }
+    
+    return response;
+  } catch (error) {
+    // Network failed, try to serve from stale cache
+    const staleResponse = await cache.match(request);
+    if (staleResponse) {
+      return staleResponse;
+    }
+    
+    // Last resort: opaque fetch
+    return fetch(request.url, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      mode: 'no-cors',
+    });
+  }
+}
 
 // Background fetch and cache (non-blocking)
 async function fetchAndCache(request) {
