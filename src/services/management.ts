@@ -1,4 +1,21 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/charming_api';
+const DEFAULT_HEADERS = {
+  'Content-Type': 'application/json',
+  'ngrok-skip-browser-warning': 'true',
+};
+
+const parseJsonResponse = async (response: Response) => {
+  const rawText = await response.text();
+
+  try {
+    return rawText ? JSON.parse(rawText) : null;
+  } catch {
+    return {
+      success: false,
+      message: rawText || 'Invalid server response',
+    };
+  }
+};
 
 export interface EnrollmentStudent {
   first_name: string;
@@ -192,8 +209,8 @@ export interface FetchTeacherRatingsResponse {
 export const managementService = {
   async fetchEnrollments(status: string = 'pending'): Promise<FetchEnrollmentsResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/management/pending-enrollments.php?status=${status}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/management/pending-enrollments.php?status=${status}`, { headers: DEFAULT_HEADERS });
+      const data = await parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching enrollments:', error);
@@ -210,12 +227,10 @@ export const managementService = {
     try {
       const response = await fetch(`${API_BASE_URL}/management/approve-enrollment.php`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify(request),
       });
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error approving enrollment:', error);
@@ -237,8 +252,8 @@ export const managementService = {
 
   async fetchIdps(status: string = 'pending'): Promise<FetchIdpsResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/management/pending-idps.php?status=${status}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/management/pending-idps.php?status=${status}`, { headers: DEFAULT_HEADERS });
+      const data = await parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching IDPs:', error);
@@ -255,9 +270,7 @@ export const managementService = {
     try {
       const response = await fetch(`${API_BASE_URL}/management/approve-idp.php`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify(request),
       });
       
@@ -283,8 +296,8 @@ export const managementService = {
 
   async fetchSatna(year: number): Promise<FetchSatnaResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/management/skill-audits.php?year=${year}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/management/skill-audits.php?year=${year}`, { headers: DEFAULT_HEADERS });
+      const data = await parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching SATNA submissions:', error);
@@ -299,8 +312,8 @@ export const managementService = {
 
   async fetchTeacherRatings(): Promise<FetchTeacherRatingsResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/management/teacher-ratings.php`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/management/teacher-ratings.php`, { headers: DEFAULT_HEADERS });
+      const data = await parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching teacher ratings:', error);
