@@ -5,14 +5,24 @@ import "./index.css";
 const _originalFetch = window.fetch.bind(window);
 window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers);
-  headers.set('ngrok-skip-browser-warning', 'true');
+  
+  // Only add ngrok header if we're actually using ngrok
+  if (typeof input === 'string' && input.includes('ngrok')) {
+    headers.set('ngrok-skip-browser-warning', 'true');
+  } else if (input instanceof URL && input.hostname.includes('ngrok')) {
+    headers.set('ngrok-skip-browser-warning', 'true');
+  }
+  
   return _originalFetch(input, { ...init, headers });
 };
 
-// Register service worker to bypass ngrok warning page and cache media
+// Register service worker based on environment
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', {
+    // Use Cloudflare-optimized SW if not on ngrok
+    const swFile = window.location.hostname.includes('ngrok') ? '/sw.js' : '/sw-cf.js';
+    
+    navigator.serviceWorker.register(swFile, {
       scope: '/'
     }).then((registration) => {
       console.log('SW registered: ', registration);
