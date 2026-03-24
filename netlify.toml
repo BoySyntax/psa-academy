@@ -2,12 +2,6 @@
   command = "npm run build"
   publish = "dist"
 
-# Custom domain settings
-[[redirects]]
-  from = "https://psa-academy.netlify.app/*"
-  to = "https://psa-academy.com/:splat"
-  status = 301
-
 [build.environment]
   NODE_VERSION = "18"
 

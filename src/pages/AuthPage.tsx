@@ -14,9 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useRegistrationForm } from "@/hooks/useRegistrationForm";
-import { registrationService } from "@/services/registration";
-import { RegistrationFormData } from "@/types/registration";
+import { authService } from "@/services/auth-service";
 import { USER_TYPE_OPTIONS } from "@/constants/userTypes";
 
 interface AuthPageProps {
@@ -30,9 +28,8 @@ const AuthPage = ({ onLoginSuccess }: AuthPageProps) => {
   const [showTerms, setShowTerms] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [hasViewedTerms, setHasViewedTerms] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { formData, updateField } = useRegistrationForm();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";

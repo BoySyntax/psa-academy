@@ -1,6 +1,34 @@
 import { RegistrationFormData } from "@/types/registration";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/charming_api';
+// Get API base URL from multiple sources (called fresh each time)
+const getApiBaseUrl = (): string => {
+  // First try localStorage (user configured)
+  const stored = localStorage.getItem('psa_backend_url');
+  if (stored) return stored;
+  
+  // Then try environment variable
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl !== 'http://localhost/charming_api') return envUrl;
+  
+  // Default to localhost for development
+  return 'http://localhost/charming_api';
+};
+
+// Don't cache - get fresh each time
+const getApiUrl = (path: string): string => {
+  const baseUrl = getApiBaseUrl();
+  console.log('getApiUrl - baseUrl:', baseUrl);
+  console.log('getApiUrl - path:', path);
+  
+  // Remove trailing slash from base and ensure path starts with /
+  const cleanBase = baseUrl.replace(/\/$/, '');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const fullUrl = `${cleanBase}${cleanPath}`;
+  
+  console.log('getApiUrl - fullUrl:', fullUrl);
+  return fullUrl;
+};
+
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
   'ngrok-skip-browser-warning': 'true',
@@ -25,7 +53,7 @@ const parseJsonResponse = async (response: Response) => {
 export const registrationService = {
   async registerUser(data: RegistrationFormData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/register.php`, {
+      const response = await fetch(getApiUrl('/register.php'), {
         method: 'POST',
         headers: DEFAULT_HEADERS,
         body: JSON.stringify(data),
@@ -62,14 +90,20 @@ export const registrationService = {
       };
     }
 
+      console.log('Attempting login to:', getApiUrl('/login.php'));
+    console.log('API_BASE_URL:', getApiUrl('/'));
+
     try {
-      const response = await fetch(`${API_BASE_URL}/login.php`, {
+      const response = await fetch(getApiUrl('/login.php'), {
         method: 'POST',
         headers: DEFAULT_HEADERS,
         body: JSON.stringify({ username, password }),
         // Add timeout
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
+
+      console.log('Login response status:', response.status);
+      console.log('Login response headers:', Object.fromEntries(response.headers.entries()));
 
       const { data: result, rawText } = await parseJsonResponse(response);
 

@@ -1,0 +1,13 @@
+tunnel: a569d7a3-6ee8-49c8-b238-133823e6d3dc
+credentials-file: C:\Users\User\.cloudflared\a569d7a3-6ee8-49c8-b238-133823e6d3dc.json
+
+ingress:
+  # Route to your localhost backend
+  - hostname: psa-backend.pages.dev
+    service: http://localhost:80
+  
+  # Fallback for testing (use the tunnel's default URL)
+  - service: http://localhost:80
+  
+  # Default route
+  - service: http_status:404
