@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import SupabaseAuthPage from "./pages/SupabaseAuthPage";
-import { authService } from "./services/auth-service";
+import { simpleAuthService } from "./services/simple-auth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +41,7 @@ const App = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await authService.getCurrentUser();
+        const currentUser = await simpleAuthService.getCurrentUser();
         setUser(currentUser);
       } catch (error) {
         console.error('Auth check failed:', error);

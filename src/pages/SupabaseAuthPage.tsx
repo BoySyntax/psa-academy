@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { authService } from "@/services/auth-service";
+import { simpleAuthService } from "@/services/simple-auth";
 import { USER_TYPE_OPTIONS } from "@/constants/userTypes";
 
 interface AuthPageProps {
@@ -114,7 +114,7 @@ Last updated: March 2026`;
     try {
       if (isLogin) {
         // Login
-        const result = await authService.signIn(email, password);
+        const result = await simpleAuthService.signIn(email, password);
         
         if (result.success && result.user) {
           setMessage({
@@ -136,7 +136,7 @@ Last updated: March 2026`;
         }
       } else {
         // Register
-        const result = await authService.signUp(email, password, {
+        const result = await simpleAuthService.signUp(email, password, {
           username,
           role: userType,
         });
