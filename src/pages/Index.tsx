@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from "react";
-import AuthPage from "./AuthPage";
+import SupabaseAuthPage from "./SupabaseAuthPage";
 import DashboardHome from "./DashboardHome";
 import DashboardProfile from "./DashboardProfile";
 import CareerLeverageInventory from "./CareerLeverageInventory";
@@ -67,12 +67,21 @@ const Index = () => {
   } | null>(null);
   const [currentUserType, setCurrentUserType] = useState<UserType | null>(null);
 
-  const handleLoginSuccess = (userData: { id: number; firstName: string; lastName: string; userType?: UserType }) => {
-    const normalizedId = Number((userData as any).id);
-    setUser({
-      ...userData,
-      id: Number.isFinite(normalizedId) ? normalizedId : 0,
-    });
+  const handleLoginSuccess = (userData: {
+    id: string | number;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    userType?: UserType;
+  }) => {
+    // Convert Supabase user to expected format
+    const user = {
+      id: typeof userData.id === 'string' ? parseInt(userData.id) || 0 : userData.id,
+      firstName: userData.firstName || userData.email?.split('@')[0] || 'User',
+      lastName: userData.lastName || '',
+      userType: userData.userType,
+    };
+    setUser(user);
     if (userData.userType) {
       setCurrentUserType(userData.userType);
     }
@@ -109,7 +118,7 @@ const Index = () => {
 
   // Redirect to auth if not logged in
   if (!isLoggedIn || !user) {
-    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+    return <SupabaseAuthPage onLoginSuccess={handleLoginSuccess} />;
   }
 
   // Render appropriate dashboard based on user type
