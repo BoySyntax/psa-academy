@@ -1,0 +1,15 @@
+# Cache static assets for 1 year with immutable strategy
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache service worker for 1 day
+/sw.js
+  Cache-Control: public, max-age=86400
+
+# Cache index.html for short time (allows updates)
+/index.html
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Cache API responses for 5 minutes
+/api/*
+  Cache-Control: public, max-age=300

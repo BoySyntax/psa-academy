@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import AuthPage from "./AuthPage";
 import DashboardHome from "./DashboardHome";
 import DashboardProfile from "./DashboardProfile";
@@ -10,35 +10,48 @@ import StudentDashboard from "./dashboards/StudentDashboard";
 import TeacherDashboard from "./dashboards/TeacherDashboard";
 import AdminDashboard from "./dashboards/AdminDashboard";
 import ManagementDashboard from "./dashboards/ManagementDashboard";
-import UserManagement from "./admin/UserManagement";
-import CourseManagement from "./admin/CourseManagement";
-import ContentManagement from "./admin/ContentManagement";
-import CreateUser from "./admin/CreateUser";
-import EditUser from "./admin/EditUser";
-import AdminAssessments from "./admin/AdminAssessments";
-import TrainerList from "./admin/TrainerList";
-import CreateCourse from "./admin/CreateCourse";
-import EditCourse from "./admin/EditCourse";
-import CapacityDevelopmentPlan from "./admin/CapacityDevelopmentPlan";
-import MyCourses from "./student/MyCourses";
-import AvailableCourses from "./student/AvailableCourses";
-import CourseViewer from "./student/CourseViewer";
-import CourseOverview from "./student/CourseOverview";
-import TeacherCourses from "./teacher/TeacherCourses";
-import TeacherStudents from "./teacher/TeacherStudents";
-import EnrollmentApprovals from "./management/EnrollmentApprovals";
-import IdpApprovals from "./management/IdpApprovals";
-import StudentGrades from "./teacher/StudentGrades";
-import DashboardIDP from "./DashboardIDP";
-import CareerLeverageSubmissions from "./management/CareerLeverageSubmissions";
-import SatnaSubmissions from "./management/SatnaSubmissions";
-import TeacherRatings from "./management/TeacherRatings";
-import StudentAssessments from "./student/StudentAssessments";
-import ImpactEvaluations from "./management/ImpactEvaluations";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { UserType } from "@/constants/userTypes";
 import { motion } from "framer-motion";
+
+// Lazy load heavy components to reduce initial bundle size
+const UserManagement = lazy(() => import("./admin/UserManagement"));
+const CourseManagement = lazy(() => import("./admin/CourseManagement"));
+const ContentManagement = lazy(() => import("./admin/ContentManagement"));
+const CreateUser = lazy(() => import("./admin/CreateUser"));
+const EditUser = lazy(() => import("./admin/EditUser"));
+const AdminAssessments = lazy(() => import("./admin/AdminAssessments"));
+const TrainerList = lazy(() => import("./admin/TrainerList"));
+const CreateCourse = lazy(() => import("./admin/CreateCourse"));
+const EditCourse = lazy(() => import("./admin/EditCourse"));
+const CapacityDevelopmentPlan = lazy(() => import("./admin/CapacityDevelopmentPlan"));
+const MyCourses = lazy(() => import("./student/MyCourses"));
+const AvailableCourses = lazy(() => import("./student/AvailableCourses"));
+const CourseViewer = lazy(() => import("./student/CourseViewer"));
+const CourseOverview = lazy(() => import("./student/CourseOverview"));
+const TeacherCourses = lazy(() => import("./teacher/TeacherCourses"));
+const TeacherStudents = lazy(() => import("./teacher/TeacherStudents"));
+const EnrollmentApprovals = lazy(() => import("./management/EnrollmentApprovals"));
+const IdpApprovals = lazy(() => import("./management/IdpApprovals"));
+const StudentGrades = lazy(() => import("./teacher/StudentGrades"));
+const DashboardIDP = lazy(() => import("./DashboardIDP"));
+const CareerLeverageSubmissions = lazy(() => import("./management/CareerLeverageSubmissions"));
+const SatnaSubmissions = lazy(() => import("./management/SatnaSubmissions"));
+const TeacherRatings = lazy(() => import("./management/TeacherRatings"));
+const StudentAssessments = lazy(() => import("./student/StudentAssessments"));
+const ImpactEvaluations = lazy(() => import("./management/ImpactEvaluations"));
+
+// Loading component for lazy-loaded pages
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
+    />
+  </div>
+);
 
 const Index = () => {
   const { loading } = useAuth();
@@ -107,7 +120,11 @@ const Index = () => {
 
     switch (currentUserType) {
       case "student":
-        return <CourseOverview user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CourseOverview user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "teacher":
         return <TeacherDashboard user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
       case "admin":
@@ -123,12 +140,20 @@ const Index = () => {
   const renderPageContent = () => {
     if (dashboardPage.startsWith("edit-user/")) {
       const userId = dashboardPage.slice("edit-user/".length);
-      return <EditUser user={user} onNavigate={handleNavigate} onLogout={handleLogout} userId={userId} />;
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <EditUser user={user} onNavigate={handleNavigate} onLogout={handleLogout} userId={userId} />
+        </Suspense>
+      );
     }
 
     if (dashboardPage.startsWith("edit-course/")) {
       const courseId = dashboardPage.slice("edit-course/".length);
-      return <EditCourse onNavigate={handleNavigate} courseId={courseId} />;
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <EditCourse onNavigate={handleNavigate} courseId={courseId} />
+        </Suspense>
+      );
     }
 
     switch (dashboardPage) {
@@ -139,7 +164,11 @@ const Index = () => {
       case "career-leverage-inventory":
         return <CareerLeverageInventory user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
       case "idp":
-        return <DashboardIDP user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <DashboardIDP user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "edit-profile":
         return <EditProfile user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
       case "documents":
@@ -147,72 +176,156 @@ const Index = () => {
       case "settings":
         return <DashboardSettings user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
       case "users":
-        return <UserManagement user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <UserManagement user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "trainers":
-        return <TrainerList user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <TrainerList user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "admin-career-leverage":
-        return <AdminAssessments user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AdminAssessments user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "create-user":
-        return <CreateUser user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CreateUser user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "courses":
-        return <CourseManagement user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CourseManagement user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "capacity-development-plan":
-        return <CapacityDevelopmentPlan user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CapacityDevelopmentPlan user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "content":
-        return currentUserType ? (
-          <ContentManagement
-            user={user}
-            currentUserType={currentUserType}
-            onNavigate={handleNavigate}
-            onLogout={handleLogout}
-          />
-        ) : (
-          <ContentManagement
-            user={user}
-            currentUserType={"student"}
-            onNavigate={handleNavigate}
-            onLogout={handleLogout}
-          />
+        return (
+          <Suspense fallback={<PageLoader />}>
+            {currentUserType ? (
+              <ContentManagement
+                user={user}
+                currentUserType={currentUserType}
+                onNavigate={handleNavigate}
+                onLogout={handleLogout}
+              />
+            ) : (
+              <ContentManagement
+                user={user}
+                currentUserType={"student"}
+                onNavigate={handleNavigate}
+                onLogout={handleLogout}
+              />
+            )}
+          </Suspense>
         );
       case "create-course":
-        return <CreateCourse onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CreateCourse onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case "course-overview":
         return renderDashboard();
       case "teacher-courses":
-        return <TeacherCourses teacherId={user?.id.toString() || ""} onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <TeacherCourses teacherId={user?.id.toString() || ""} onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case "students":
-        return <TeacherStudents teacherId={user?.id.toString() || ""} onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <TeacherStudents teacherId={user?.id.toString() || ""} onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case "my-courses":
-        return <MyCourses user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <MyCourses user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "available-courses":
-        return <AvailableCourses user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AvailableCourses user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "course-viewer":
         return selectedCourseId ? (
-          <CourseViewer 
-            courseId={selectedCourseId} 
-            user={user}
-            onNavigate={handleNavigate}
-            onLogout={handleLogout}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <CourseViewer 
+              courseId={selectedCourseId} 
+              user={user}
+              onNavigate={handleNavigate}
+              onLogout={handleLogout}
+            />
+          </Suspense>
         ) : (
-          <MyCourses user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          <Suspense fallback={<PageLoader />}>
+            <MyCourses user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
         );
       case "enrollments":
-        return <EnrollmentApprovals user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <EnrollmentApprovals user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "idp-approvals":
-        return <IdpApprovals user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <IdpApprovals user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "satna-submissions":
-        return <SatnaSubmissions user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <SatnaSubmissions user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "career-leverage-submissions":
-        return <CareerLeverageSubmissions user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CareerLeverageSubmissions user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "teacher-ratings":
-        return <TeacherRatings user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <TeacherRatings user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "impact-evaluations":
-        return <ImpactEvaluations user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ImpactEvaluations user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "student-grades":
-        return <StudentGrades user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <StudentGrades user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       case "student-assessments":
-        return <StudentAssessments user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <StudentAssessments user={user} onNavigate={handleNavigate} onLogout={handleLogout} />
+          </Suspense>
+        );
       default:
         return renderDashboard();
     }
