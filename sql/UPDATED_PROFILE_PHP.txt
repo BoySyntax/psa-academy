@@ -1,0 +1,44 @@
+Replace the SELECT query in c:/xampp/htdocs/charming_api/student/profile.php (around line 31-51) with this:
+
+        $query = "SELECT 
+                    id,
+                    username,
+                    email,
+                    user_type,
+                    first_name,
+                    middle_name,
+                    last_name,
+                    suffix,
+                    date_of_birth,
+                    sex,
+                    blood_type,
+                    civil_status,
+                    type_of_disability,
+                    religion,
+                    educational_attainment,
+                    house_no_and_street,
+                    barangay,
+                    municipality,
+                    province,
+                    region,
+                    cellphone_number,
+                    type_of_employment,
+                    civil_service_eligibility_level,
+                    salary_grade,
+                    present_position,
+                    office,
+                    service,
+                    division_province,
+                    emergency_contact_name,
+                    emergency_contact_relationship,
+                    emergency_contact_address,
+                    emergency_contact_number,
+                    emergency_contact_email,
+                    profile_image_url,
+                    created_at,
+                    updated_at
+                  FROM users 
+                  WHERE id = :id 
+                  LIMIT 1";
+
+This adds all the missing columns so the Profile page can display them.

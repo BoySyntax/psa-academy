@@ -1,0 +1,14 @@
+ALTER TABLE training_evaluations
+  ADD COLUMN trainee_name VARCHAR(255) NULL,
+  ADD COLUMN office_service_division VARCHAR(255) NULL,
+  ADD COLUMN topic VARCHAR(255) NULL,
+  ADD COLUMN training_objectives TEXT NULL,
+  ADD COLUMN level2_q1 LONGTEXT NULL,
+  ADD COLUMN level2_q2 LONGTEXT NULL,
+  ADD COLUMN level3_q1 LONGTEXT NULL,
+  ADD COLUMN level3_q2 LONGTEXT NULL,
+  ADD COLUMN level3_q3 LONGTEXT NULL,
+  ADD COLUMN evaluated_by VARCHAR(255) NULL,
+  ADD COLUMN evaluated_by_date DATE NULL,
+  ADD COLUMN received_by VARCHAR(255) NULL,
+  ADD COLUMN received_by_date DATE NULL;
