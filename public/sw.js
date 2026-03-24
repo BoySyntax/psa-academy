@@ -3,11 +3,12 @@
 // - Uses stale-while-revalidate for instant loads
 // - Automatically cleans up old caches
 
-const CACHE_NAME = 'psa-uploads-v3';
-const STALE_CACHE_NAME = 'psa-uploads-stale-v3';
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_NAME = 'psa-uploads-v4';
+const STALE_CACHE_NAME = 'psa-uploads-stale-v4';
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days for media
+const PDF_CACHE_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days for PDFs (they're larger)
 
-// Only match GET requests to ngrok hosts for the /uploads/ path
+// Match GET requests to ngrok hosts for the /uploads/ path (all media types)
 function isNgrokUploadsRequest(url, method) {
   if (method !== 'GET') return false;
   const isNgrok =
@@ -16,6 +17,13 @@ function isNgrokUploadsRequest(url, method) {
     url.hostname.endsWith('.ngrok.app');
   const isUploads = url.pathname.includes('/uploads/');
   return isNgrok && isUploads;
+}
+
+// Check if request is for media (images, PDFs, videos)
+function isMediaRequest(url) {
+  const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.pdf', '.mp4', '.avi', '.mov', '.mp3'];
+  const extension = url.pathname.toLowerCase().split('.').pop();
+  return mediaExtensions.includes('.' + extension);
 }
 
 // Clean up expired cache entries
@@ -28,7 +36,11 @@ async function cleanupExpiredCache() {
     const response = await cache.match(request);
     if (response) {
       const dateHeader = response.headers.get('date');
-      if (dateHeader && (now - new Date(dateHeader).getTime()) > CACHE_TTL) {
+      const url = new URL(request.url);
+      const isPdf = url.pathname.toLowerCase().endsWith('.pdf');
+      const ttl = isPdf ? PDF_CACHE_TTL : CACHE_TTL;
+      
+      if (dateHeader && (now - new Date(dateHeader).getTime()) > ttl) {
         await cache.delete(request);
       }
     }
