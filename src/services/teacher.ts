@@ -182,7 +182,7 @@ export const teacherService = {
     let completed = 0;
     const results = new Map<number, boolean>();
 
-    const uploadChunk = async ({ idx, chunk, retryCount = 0 }: { idx: number; chunk: Blob; retryCount?: number }) => {
+    const uploadChunk = async ({ idx, chunk }: { idx: number; chunk: Blob }) => {
       const fd = new FormData();
       fd.append('chunk', chunk, file.name);
       fd.append('upload_id', uploadId);
@@ -201,15 +201,7 @@ export const teacherService = {
         body: fd,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        if (retryCount < 2) {
-          // Wait with exponential backoff before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-          return uploadChunk({ idx, chunk, retryCount: retryCount + 1 });
-        }
-        throw new Error(`Chunk ${idx} failed after retries: ${errorText}`);
-      }
+      if (!response.ok) throw new Error(`Chunk ${idx} failed`);
       
       completed++;
       onProgress?.(Math.round((completed / totalChunks) * 100));
@@ -225,16 +217,11 @@ export const teacherService = {
       return null;
     };
 
-    // Upload in parallel with reduced concurrency to avoid backend overload
-    const CONCURRENCY = 2;
+    // Upload in parallel with concurrency of 3
+    const CONCURRENCY = 3;
     for (let i = 0; i < chunks.length; i += CONCURRENCY) {
       const batch = chunks.slice(i, i + CONCURRENCY);
       await Promise.all(batch.map(uploadChunk));
-      
-      // Small delay between batches to let backend breathe
-      if (i + CONCURRENCY < chunks.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
     }
 
     return { success: true, message: 'Material uploaded successfully' };

@@ -14,8 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { authService } from "@/services/auth-service";
+import { registrationService } from "@/services/registration";
 import { USER_TYPE_OPTIONS } from "@/constants/userTypes";
+import { useRegistrationForm } from "@/hooks/useRegistrationForm";
+import { RegistrationFormData } from "@/types/registration";
 
 interface AuthPageProps {
   onLoginSuccess?: (user: { id: number; firstName: string; lastName: string }) => void;
