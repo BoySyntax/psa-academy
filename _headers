@@ -1,0 +1,33 @@
+# Cloudflare Pages headers
+# These are automatically applied when deploying to Cloudflare Pages
+
+# Security headers
+/*
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Static assets - cache for 1 year
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Media uploads - cache for 7 days
+/uploads/*
+  Cache-Control: public, max-age=604800
+
+# API responses - no caching
+/api/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# HTML pages - cache for 5 minutes
+/*.html
+  Cache-Control: public, max-age=300
+
+# Fonts - cache for 1 year
+/*.woff
+/*.woff2
+/*.ttf
+/*.eot
+  Cache-Control: public, max-age=31536000, immutable

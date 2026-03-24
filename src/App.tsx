@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import NgrokDetector from "./components/NgrokDetector";
+import TunnelDetector from "./components/NgrokDetector";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,13 +37,13 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <NgrokDetector>
+        <TunnelDetector>
           <Routes>
             <Route path="/" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </NgrokDetector>
+        </TunnelDetector>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

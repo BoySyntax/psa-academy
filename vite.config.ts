@@ -8,18 +8,17 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // Support your Cloudflare tunnel and custom domain
+    // Cloudflare tunnel support
     allowedHosts: [
       'printing-interviews-foster-seemed.trycloudflare.com',
-      'psa-academy.com',
-      'www.psa-academy.com',
-      'psa-academy.netlify.app',
+      'psa-academy.workers.dev',
+      'psa-academy.pages.dev',
       'localhost'
     ],
     hmr: {
       overlay: false,
     },
-    // CORS settings for development
+    // CORS settings for Cloudflare tunnel
     cors: true,
   },
   

@@ -2,30 +2,16 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-const _originalFetch = window.fetch.bind(window);
-window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const headers = new Headers(init?.headers);
-  
-  // Only add ngrok header if we're actually using ngrok
-  if (typeof input === 'string' && input.includes('ngrok')) {
-    headers.set('ngrok-skip-browser-warning', 'true');
-  } else if (input instanceof URL && input.hostname.includes('ngrok')) {
-    headers.set('ngrok-skip-browser-warning', 'true');
-  }
-  
-  return _originalFetch(input, { ...init, headers });
-};
+// Cloudflare-optimized fetch - no special headers needed
+// Cloudflare handles everything automatically
 
-// Register service worker based on environment
+// Register Cloudflare-optimized service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Use Cloudflare-optimized SW if not on ngrok
-    const swFile = window.location.hostname.includes('ngrok') ? '/sw.js' : '/sw-cf.js';
-    
-    navigator.serviceWorker.register(swFile, {
+    navigator.serviceWorker.register('/sw-cf.js', {
       scope: '/'
     }).then((registration) => {
-      console.log('SW registered: ', registration);
+      console.log('Cloudflare SW registered: ', registration);
       
       // Force update service worker on new versions
       registration.addEventListener('updatefound', () => {

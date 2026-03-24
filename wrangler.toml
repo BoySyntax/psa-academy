@@ -1,0 +1,17 @@
+name = "psa-academy"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-03-24"
+
+[env.production]
+name = "psa-academy-prod"
+
+# Environment variables for Pages
+[env.production.vars]
+VITE_API_BASE_URL = "https://your-backend-domain.com"
+VITE_ENVIRONMENT = "production"
+VITE_CDN_PROVIDER = "cloudflare"
+
+[vars]
+VITE_API_BASE_URL = "https://your-backend-domain.com"
+VITE_ENVIRONMENT = "production"
+VITE_CDN_PROVIDER = "cloudflare"
