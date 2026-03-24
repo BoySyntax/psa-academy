@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { profileService } from "@/services/profile";
 import { notificationsService, StudentNotification } from "@/services/notifications";
+import { getImageUrl } from "@/lib/apiHelper";
 
 interface StudentHeaderActionsProps {
   user: {
@@ -49,7 +50,7 @@ const StudentHeaderActions = ({ user, onNavigate, onLogout }: StudentHeaderActio
   const loadProfile = async () => {
     const result = await profileService.getProfile(user.id.toString());
     if (result.success && result.profile?.profile_image_url) {
-      setProfileImageUrl(result.profile.profile_image_url);
+      setProfileImageUrl(getImageUrl(result.profile.profile_image_url) || "");
     }
   };
 
@@ -186,7 +187,7 @@ const StudentHeaderActions = ({ user, onNavigate, onLogout }: StudentHeaderActio
             </div>
 
             <Avatar className="h-10 w-10">
-              <AvatarImage src={profileImageUrl || undefined} alt="Profile image" />
+              <AvatarImage src={getImageUrl(profileImageUrl) || undefined} alt="Profile image" />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </button>
