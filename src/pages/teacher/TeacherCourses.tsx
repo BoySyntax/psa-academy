@@ -47,6 +47,7 @@ const TeacherCourses = ({ teacherId, onNavigate }: TeacherCoursesProps) => {
   const [materialName, setMaterialName] = useState("");
   const [materialDescription, setMaterialDescription] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<any>(null);
   const [moduleForm, setModuleForm] = useState({ module_name: "", description: "" });
@@ -205,13 +206,15 @@ const TeacherCourses = ({ teacherId, onNavigate }: TeacherCoursesProps) => {
     }
 
     setUploading(true);
+    setUploadProgress(0);
     const result = await teacherService.uploadMaterial(
       selectedLesson.id,
       selectedCourse.id,
       teacherId,
       uploadFile,
       materialName,
-      materialDescription
+      materialDescription,
+      (pct) => setUploadProgress(pct)
     );
 
     if (result.success) {
@@ -230,6 +233,7 @@ const TeacherCourses = ({ teacherId, onNavigate }: TeacherCoursesProps) => {
       });
     }
     setUploading(false);
+    setUploadProgress(0);
   };
 
   const handleDeleteMaterial = async (materialId: number) => {
@@ -901,8 +905,31 @@ const TeacherCourses = ({ teacherId, onNavigate }: TeacherCoursesProps) => {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+          {uploading && (
+            <div className="space-y-1 mt-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  Uploading
+                  {uploadFile && uploadFile.size > 1024 * 1024
+                    ? ` — chunk ${Math.min(
+                        Math.ceil((uploadProgress / 100) * (Math.ceil(uploadFile.size / (1024 * 1024)) || 1)),
+                        Math.ceil(uploadFile.size / (1024 * 1024)) || 1
+                      )} of ${Math.ceil(uploadFile.size / (1024 * 1024)) || 1}`
+                    : ""}
+                  …
+                </span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)} disabled={uploading}>
               Cancel
             </Button>
             <Button onClick={handleUploadMaterial} disabled={!uploadFile || uploading}>
@@ -913,7 +940,7 @@ const TeacherCourses = ({ teacherId, onNavigate }: TeacherCoursesProps) => {
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
                   />
-                  Uploading...
+                  Uploading... {uploadProgress}%
                 </>
               ) : (
                 <>

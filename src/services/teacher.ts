@@ -61,70 +61,84 @@ export const teacherService = {
     }
   },
 
-  // Upload learning material
+  // Upload learning material using chunked upload to bypass ngrok's 40s request timeout.
+  // Files are split into 1 MB pieces; each piece is a separate HTTP POST that completes
+  // in a few seconds regardless of file size.
   async uploadMaterial(
     lessonId: number,
     courseId: number,
     teacherId: string,
     file: File,
     materialName?: string,
-    description?: string
+    description?: string,
+    onProgress?: (pct: number) => void
   ) {
+    const MAX_BYTES = 500 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return { success: false, message: 'File is too large. Maximum allowed size is 500MB.' };
+    }
+
+    const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB — well within ngrok's 40 s timeout
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE) || 1;
+    const uploadId =
+      Math.random().toString(36).slice(2) + Date.now().toString(36);
+
     try {
-      // Client-side guardrail to avoid PHP/Apache rejecting large uploads
-      const maxBytes = 500 * 1024 * 1024;
-      if (file.size > maxBytes) {
-        return {
-          success: false,
-          message: 'File is too large. Maximum allowed size is 500MB.',
-        };
-      }
+      for (let idx = 0; idx < totalChunks; idx++) {
+        const start = idx * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('lesson_id', lessonId.toString());
-      formData.append('course_id', courseId.toString());
-      formData.append('teacher_id', teacherId);
-      if (materialName) formData.append('material_name', materialName);
-      if (description) formData.append('description', description);
+        const fd = new FormData();
+        fd.append('chunk', chunk, file.name);
+        fd.append('upload_id', uploadId);
+        fd.append('chunk_index', String(idx));
+        fd.append('total_chunks', String(totalChunks));
+        fd.append('file_name', file.name);
+        fd.append('file_size', String(file.size));
+        // Send metadata on every chunk so the backend has it when assembling
+        fd.append('lesson_id', String(lessonId));
+        fd.append('course_id', String(courseId));
+        fd.append('teacher_id', teacherId);
+        if (materialName) fd.append('material_name', materialName);
+        if (description)  fd.append('description', description);
 
-      const response = await fetch(`${API_BASE_URL}/teacher/upload-material.php`, {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch(`${API_BASE_URL}/teacher/upload-chunk.php`, {
+          method: 'POST',
+          body: fd,
+        });
 
-      // Backend may return HTML on errors (e.g. PHP warnings). Avoid JSON parse crash.
-      let result: any = null;
-      let rawText: string | null = null;
-      try {
-        result = await response.json();
-      } catch {
-        try {
-          rawText = await response.text();
-        } catch {
-          rawText = null;
+        if (!response.ok) {
+          let errMsg = 'Chunk upload failed';
+          try {
+            const err = await response.json();
+            errMsg = err.message || errMsg;
+          } catch { /* ignore */ }
+          return { success: false, message: errMsg };
+        }
+
+        // Report progress after each successful chunk
+        onProgress?.(Math.round(((idx + 1) / totalChunks) * 100));
+
+        // Last chunk response contains the final material info
+        if (idx === totalChunks - 1) {
+          try {
+            const result = await response.json();
+            return {
+              success: true,
+              message: result.message || 'Material uploaded successfully',
+              material: result.material,
+            };
+          } catch {
+            return { success: true, message: 'Material uploaded successfully' };
+          }
         }
       }
-
-      if (response.ok) {
-        return {
-          success: true,
-          message: (result && result.message) || 'Material uploaded successfully',
-          material: result?.material,
-        };
-      } else {
-        return {
-          success: false,
-          message:
-            (result && result.message) ||
-            (rawText ? rawText.slice(0, 300) : null) ||
-            'Failed to upload material',
-        };
-      }
+      return { success: true, message: 'Material uploaded successfully' };
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to upload material',
+        message: error instanceof Error ? error.message : 'Upload failed',
       };
     }
   },
